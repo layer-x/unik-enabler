@@ -4,40 +4,40 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cloudfoundry-incubator/diego-enabler/diego_support"
+	"github.com/layer-x/Unik-Enabler/unik_support"
 	"github.com/cloudfoundry/cli/plugin"
 )
 
-type DiegoEnabler struct{}
+type UnikEnabler struct{}
 
-func (c *DiegoEnabler) GetMetadata() plugin.PluginMetadata {
+func (c *UnikEnabler) GetMetadata() plugin.PluginMetadata {
 	return plugin.PluginMetadata{
-		Name: "Diego-Enabler",
+		Name: "Unik-Enabler",
 		Version: plugin.VersionType{
-			Major: 1,
+			Major: 0,
 			Minor: 0,
-			Build: 1,
+			Build: 0,
 		},
 		Commands: []plugin.Command{
 			{
-				Name:     "enable-diego",
-				HelpText: "enable Diego support for an app",
+				Name:     "enable-unik",
+				HelpText: "enable Unik support for an app",
 				UsageDetails: plugin.Usage{
-					Usage: "cf enable-diego APP_NAME",
+					Usage: "cf enable-unik APP_NAME UNIK_IP VOLUME_DATA",
 				},
 			},
 			{
-				Name:     "disable-diego",
-				HelpText: "disable Diego support for an app",
+				Name:     "disable-unik",
+				HelpText: "disable Unik support for an app",
 				UsageDetails: plugin.Usage{
-					Usage: "cf disable-diego APP_NAME",
+					Usage: "cf disable-unik APP_NAME",
 				},
 			},
 			{
-				Name:     "has-diego-enabled",
-				HelpText: "Check if Diego support is enabled for an app",
+				Name:     "has-unik-enabled",
+				HelpText: "Check if Unik support is enabled for an app",
 				UsageDetails: plugin.Usage{
-					Usage: "cf has-diego-enabled APP_NAME",
+					Usage: "cf has-unik-enabled APP_NAME",
 				},
 			},
 		},
@@ -45,22 +45,24 @@ func (c *DiegoEnabler) GetMetadata() plugin.PluginMetadata {
 }
 
 func main() {
-	plugin.Start(new(DiegoEnabler))
+	plugin.Start(new(UnikEnabler))
 }
 
-func (c *DiegoEnabler) Run(cliConnection plugin.CliConnection, args []string) {
-	if args[0] == "enable-diego" && len(args) == 2 {
-		c.toggleDiegoSupport(true, cliConnection, args[1])
-	} else if args[0] == "disable-diego" && len(args) == 2 {
-		c.toggleDiegoSupport(false, cliConnection, args[1])
-	} else if args[0] == "has-diego-enabled" && len(args) == 2 {
-		c.isDiegoEnabled(cliConnection, args[1])
+func (c *UnikEnabler) Run(cliConnection plugin.CliConnection, args []string) {
+	if args[0] == "enable-unik" && len(args) == 3 {
+		c.enableUnikSupport(cliConnection, args[1], args[2])
+	} else if args[0] == "enable-unik" && len(args) == 4 {
+		c.toggleUnikSupportWithVolumes(true, cliConnection, args[1], args[2], args[3])
+	} else if args[0] == "disable-unik" && len(args) == 2 {
+		c.enableUnikSupport(false, cliConnection, args[1])
+	} else if args[0] == "has-unik-enabled" && len(args) == 2 {
+		c.isUnikEnabled(cliConnection, args[1])
 	} else {
 		c.showUsage(args)
 	}
 }
 
-func (c *DiegoEnabler) showUsage(args []string) {
+func (c *UnikEnabler) showUsage(args []string) {
 	for _, cmd := range c.GetMetadata().Commands {
 		if cmd.Name == args[0] {
 			fmt.Println("Invalid Usage: \n", cmd.UsageDetails.Usage)
@@ -68,37 +70,65 @@ func (c *DiegoEnabler) showUsage(args []string) {
 	}
 }
 
-func (c *DiegoEnabler) toggleDiegoSupport(on bool, cliConnection plugin.CliConnection, appName string) {
-	d := diego_support.NewDiegoSupport(cliConnection)
+func (c *UnikEnabler) enableUnikSupport(cliConnection plugin.CliConnection, appName, unikIp string) {
+	d := unik_support.NewUnikSupport(cliConnection)
 
-	fmt.Printf("Setting %s Diego support to %t\n", appName, on)
+	fmt.Printf("Enabling Unik support for app %s using Unik Backend at %s, with no volumes\n", appName, unikIp)
 	app, err := cliConnection.GetApp(appName)
 	if err != nil {
 		exitWithError(err, []string{})
 	}
 
-	if output, err := d.SetDiegoFlag(app.Guid, on); err != nil {
+	if output, err := d.AddUnikEnv(app, unikIp); err != nil {
 		fmt.Println("err 1", err, output)
 		exitWithError(err, output)
 	}
 	sayOk()
 
-	fmt.Printf("Verifying %s Diego support is set to %t\n", appName, on)
+	fmt.Printf("Verifying %s Unik support is enabled\n", appName)
 	app, err = cliConnection.GetApp(appName)
 	if err != nil {
 		exitWithError(err, []string{})
 	}
 
-	if app.Diego == on {
+	if _, ok := app.EnvironmentVars["UNIK_IP"]; ok {
 		sayOk()
 	} else {
 		sayFailed()
-		fmt.Printf("Diego support for %s is NOT set to %t\n\n", appName, on)
+		fmt.Printf("Unik support for %s is NOT enabled\n\n", appName)
+		os.Exit(1)
+	}
+}func (c *UnikEnabler) disableUnikSupport(cliConnection plugin.CliConnection, appName string) {
+	d := unik_support.NewUnikSupport(cliConnection)
+
+	fmt.Printf("Disabling Unik support for app %s\n", appName)
+	app, err := cliConnection.GetApp(appName)
+	if err != nil {
+		exitWithError(err, []string{})
+	}
+
+	if output, err := d.RemoveUnikEnv(app); err != nil {
+		fmt.Println("err 1", err, output)
+		exitWithError(err, output)
+	}
+	sayOk()
+
+	fmt.Printf("Verifying %s Unik support is disabled\n", appName)
+	app, err = cliConnection.GetApp(appName)
+	if err != nil {
+		exitWithError(err, []string{})
+	}
+
+	if _, ok := app.EnvironmentVars["UNIK_IP"]; !ok {
+		sayOk()
+	} else {
+		sayFailed()
+		fmt.Printf("Unik support for %s is STILL enabled\n\n", appName)
 		os.Exit(1)
 	}
 }
 
-func (c *DiegoEnabler) isDiegoEnabled(cliConnection plugin.CliConnection, appName string) {
+func (c *UnikEnabler) isUnikEnabled(cliConnection plugin.CliConnection, appName string) {
 	app, err := cliConnection.GetApp(appName)
 	if err != nil {
 		exitWithError(err, []string{})
@@ -110,7 +140,11 @@ func (c *DiegoEnabler) isDiegoEnabled(cliConnection plugin.CliConnection, appNam
 		os.Exit(1)
 	}
 
-	fmt.Println(app.Diego)
+	if _, ok := app.EnvironmentVars["UNIK_IP"]; ok {
+		fmt.Println("true")
+	} else {
+		fmt.Println("false")
+	}
 }
 
 func exitWithError(err error, output []string) {

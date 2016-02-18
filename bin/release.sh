@@ -1,10 +1,10 @@
 #!/bin/bash
 
 export GH_ORG=${GH_ORG:-cloudfoundry-incubator}
-export GH_REPO=${GH_REPO:-Diego-Enabler}
-export BINARY_PREFIX=${BINARY_PREFIX:-diego-enabler}
-export NAME=${NAME:-"Diego Enabler"}
-export DESCRIPTION=${DESCRIPTION:-"Turn on Diego runtime support for application"}
+export GH_REPO=${GH_REPO:-Unik-Enabler}
+export BINARY_PREFIX=${BINARY_PREFIX:-unik-enabler}
+export NAME=${NAME:-"Unik Enabler"}
+export DESCRIPTION=${DESCRIPTION:-"Turn on Unik runtime support for application"}
 export PKG_DIR=${PKG_DIR:=out}
 
 VERSION=$(<VERSION)
