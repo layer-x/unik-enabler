@@ -52,8 +52,8 @@ type unikVolume struct {
 
 func (d *UnikSupport) AddUnikEnvWithVolumes(app plugin_models.GetAppModel, unikIp string, volumeJson string) ([]string, error) {
 	appEnv := app.EnvironmentVars
-	var unikVol unikVolume
-	err := json.Unmarshal([]byte(volumeJson), unikVol)
+	var unikVol []*unikVolume
+	err := json.Unmarshal([]byte(volumeJson), &unikVol)
 	if err != nil {
 		return nil, lxerrors.New("invalid volumes json!", err)
 	}
