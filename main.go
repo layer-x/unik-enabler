@@ -52,9 +52,9 @@ func (c *UnikEnabler) Run(cliConnection plugin.CliConnection, args []string) {
 	if args[0] == "enable-unik" && len(args) == 3 {
 		c.enableUnikSupport(cliConnection, args[1], args[2])
 	} else if args[0] == "enable-unik" && len(args) == 4 {
-		c.toggleUnikSupportWithVolumes(true, cliConnection, args[1], args[2], args[3])
+		c.enableUnikSupportWithVolumes(cliConnection, args[1], args[2], args[3])
 	} else if args[0] == "disable-unik" && len(args) == 2 {
-		c.enableUnikSupport(false, cliConnection, args[1])
+		c.disableUnikSupport(cliConnection, args[1])
 	} else if args[0] == "has-unik-enabled" && len(args) == 2 {
 		c.isUnikEnabled(cliConnection, args[1])
 	} else {
@@ -98,7 +98,39 @@ func (c *UnikEnabler) enableUnikSupport(cliConnection plugin.CliConnection, appN
 		fmt.Printf("Unik support for %s is NOT enabled\n\n", appName)
 		os.Exit(1)
 	}
-}func (c *UnikEnabler) disableUnikSupport(cliConnection plugin.CliConnection, appName string) {
+}
+
+func (c *UnikEnabler) enableUnikSupportWithVolumes(cliConnection plugin.CliConnection, appName, unikIp, volumesJson string) {
+	d := unik_support.NewUnikSupport(cliConnection)
+
+	fmt.Printf("Enabling Unik support for app %s using Unik Backend at %s, with volume data %s\n", appName, unikIp, volumesJson)
+	app, err := cliConnection.GetApp(appName)
+	if err != nil {
+		exitWithError(err, []string{})
+	}
+
+	if output, err := d.AddUnikEnvWithVolumes(app, unikIp, volumesJson); err != nil {
+		fmt.Println("err 1", err, output)
+		exitWithError(err, output)
+	}
+	sayOk()
+
+	fmt.Printf("Verifying %s Unik support is enabled\n", appName)
+	app, err = cliConnection.GetApp(appName)
+	if err != nil {
+		exitWithError(err, []string{})
+	}
+
+	if _, ok := app.EnvironmentVars["UNIK_IP"]; ok {
+		sayOk()
+	} else {
+		sayFailed()
+		fmt.Printf("Unik support for %s is NOT enabled\n\n", appName)
+		os.Exit(1)
+	}
+}
+
+func (c *UnikEnabler) disableUnikSupport(cliConnection plugin.CliConnection, appName string) {
 	d := unik_support.NewUnikSupport(cliConnection)
 
 	fmt.Printf("Disabling Unik support for app %s\n", appName)

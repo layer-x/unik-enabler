@@ -55,7 +55,7 @@ func (d *UnikSupport) AddUnikEnvWithVolumes(app plugin_models.GetAppModel, unikI
 	var unikVol unikVolume
 	err := json.Unmarshal([]byte(volumeJson), unikVol)
 	if err != nil {
-		return lxerrors.New("invalid volumes json!", err)
+		return nil, lxerrors.New("invalid volumes json!", err)
 	}
 	appEnv["UNIK_IP"] = unikIp
 	appEnv["UNIKERNEL_NAME"] = app.Name
