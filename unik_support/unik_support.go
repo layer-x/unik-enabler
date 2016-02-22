@@ -71,6 +71,13 @@ func (d *UnikSupport) AddUnikEnvWithVolumes(app plugin_models.GetAppModel, unikI
 	if err = checkUnikError(output[0]); err != nil {
 		return output, err
 	}
+	output, err = d.cli.CliCommandWithoutTerminalOutput("curl", "/v2/apps/"+app.Guid, "-X", "PUT", "-d", `{"diego":true}`)
+	if err != nil {
+		return output, err
+	}
+	if err = checkUnikError(output[0]); err != nil {
+		return output, err
+	}
 
 	return output, nil
 }
@@ -85,6 +92,13 @@ func (d *UnikSupport) RemoveUnikEnv(app plugin_models.GetAppModel) ([]string, er
 		return nil, lxerrors.New("could not marshal app env to json", err)
 	}
 	output, err := d.cli.CliCommandWithoutTerminalOutput("curl", "/v2/apps/"+app.Guid, "-X", "PUT", "-d", `{"environment_json":`+string(envData)+`}`)
+	if err != nil {
+		return output, err
+	}
+	if err = checkUnikError(output[0]); err != nil {
+		return output, err
+	}
+	output, err = d.cli.CliCommandWithoutTerminalOutput("curl", "/v2/apps/"+app.Guid, "-X", "PUT", "-d", `{"diego":false}`)
 	if err != nil {
 		return output, err
 	}

@@ -103,6 +103,10 @@ func (c *UnikEnabler) enableUnikSupport(cliConnection plugin.CliConnection, appN
 func (c *UnikEnabler) enableUnikSupportWithVolumes(cliConnection plugin.CliConnection, appName, unikIp, volumesJson string) {
 	d := unik_support.NewUnikSupport(cliConnection)
 
+	if volumesJson == "use-default" {
+		volumesJson = "[]"
+	}
+
 	fmt.Printf("Enabling Unik support for app %s using Unik Backend at %s, with volume data %s\n", appName, unikIp, volumesJson)
 	app, err := cliConnection.GetApp(appName)
 	if err != nil {
