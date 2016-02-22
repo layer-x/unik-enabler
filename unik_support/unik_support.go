@@ -40,6 +40,13 @@ func (d *UnikSupport) AddUnikEnv(app plugin_models.GetAppModel, unikIp string) (
 	if err = checkUnikError(output[0]); err != nil {
 		return output, err
 	}
+	output, err = d.cli.CliCommandWithoutTerminalOutput("curl", "/v2/apps/"+app.Guid, "-X", "PUT", "-d", `{"diego":true}`)
+	if err != nil {
+		return output, err
+	}
+	if err = checkUnikError(output[0]); err != nil {
+		return output, err
+	}
 
 	return output, nil
 }
